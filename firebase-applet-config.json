@@ -1,9 +1,10 @@
-const firebaseConfig = {
-  apiKey: "AIzaSyCgRHU4zx_Qua4CMRHYG7ZDj1Yr5Y1mBno",
-  authDomain: "nextchapter-d24ef.firebaseapp.com",
-  projectId: "nextchapter-d24ef",
-  storageBucket: "nextchapter-d24ef.firebasestorage.app",
-  messagingSenderId: "354421407174",
-  appId: "1:354421407174:web:10cacd79ce82c7bf37c6c7",
-  measurementId: "G-EQCJ03C0H4"
-};
+{
+  "apiKey": "AIzaSyAQSO0H6V7LJu4bxsa_HW_fzkxrMszIV_A",
+  "authDomain": "webxy-90248.firebaseapp.com",
+  "projectId": "webxy-90248",
+  "storageBucket": "webxy-90248.firebasestorage.app",
+  "messagingSenderId": "34030654113",
+  "appId": "1:34030654113:web:d5bf0f7064d7d5358bd6e0",
+  "measurementId": "G-9DLJ7JDCEY",
+  "firestoreDatabaseId": "(default)"
+}
