@@ -6,8 +6,9 @@ import { Quiz, Question, QuizResult } from '../types';
 import { 
   Plus, Brain, Trash2, ChevronRight, Clock, 
   BarChart3, Users, BookOpen, Search, X, Loader2, Sparkles, Wand2,
-  LayoutDashboard, LogOut
+  LayoutDashboard, LogOut, Trophy
 } from 'lucide-react';
+import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
 import { generateQuizQuestions } from '../services/geminiService';

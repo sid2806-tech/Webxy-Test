@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db, googleProvider } from './lib/firebase';
 import { UserProfile, UserRole } from './types';
 import { Toaster, toast } from 'react-hot-toast';
@@ -41,19 +41,41 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
-    return onAuthStateChanged(auth, async (user) => {
+    let unsubscribeProfile: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+        unsubscribeProfile = null;
+      }
+
       if (user) {
+        // Use onSnapshot for real-time profile updates and better connection handling
         const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setProfile(docSnap.data() as UserProfile);
-        }
+        unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            setProfile(docSnap.data() as UserProfile);
+          }
+          setLoading(false);
+        }, (err) => {
+          console.error("Profile listener error:", err);
+          setLoading(false);
+          if (err.message?.includes('offline') || err.message?.includes('permission-denied')) {
+            // Log quietly, maybe show a hint if it persists
+          }
+        });
       } else {
         setProfile(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) unsubscribeProfile();
+    };
   }, []);
 
   const login = async (role: UserRole) => {
@@ -97,8 +119,17 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         toast.error("Login window was closed.");
       } else if (error.message?.includes('INTERNAL ASSERTION FAILED')) {
         toast.error("Authentication internal error. Please try again.");
+      } else if (error.code === 'auth/unauthorized-domain') {
+        const domain = window.location.hostname;
+        toast.error(`Domain not authorized. Please add "${domain}" to your Firebase Console > Authentication > Settings > Authorized domains.`, { duration: 6000 });
+      } else if (error.code === 'permission-denied') {
+        toast.error("Firestore access denied. Have you applied the Security Rules in your Firebase console?", { duration: 6000 });
+      } else if (error.message?.includes('not found') || error.message?.includes('database')) {
+        toast.error("Firestore database not found. Please ensure you have created a 'Native Mode' database in your Firebase console.", { duration: 6000 });
+      } else if (error.message?.includes('offline')) {
+        toast.error("Firestore is unreachable (offline). This happens if you haven't created the database yet or if your browser is blocking the connection.", { duration: 6000 });
       } else {
-        toast.error("Login failed. Please try again.");
+        toast.error(`Login error: ${error.message || "Unknown error"}. Please check your Firebase console.`);
       }
     } finally {
       setIsLoggingIn(false);
