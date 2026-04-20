@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User profile with role-based access",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["teacher", "student"] },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "quiz": {
+      "title": "Quiz",
+      "description": "Quiz metadata",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "timeLimit": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "questionCount": { "type": "integer" }
+      },
+      "required": ["title", "teacherId"]
+    },
+    "question": {
+      "title": "Question",
+      "description": "MCQ Question",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "options": { "type": "array" },
+        "correctIndex": { "type": "integer" },
+        "explanation": { "type": "string" }
+      },
+      "required": ["text", "options", "correctIndex"]
+    },
+    "result": {
+      "title": "Result",
+      "description": "Student quiz attempt result",
+      "type": "object",
+      "properties": {
+        "quizId": { "type": "string" },
+        "quizTitle": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "score": { "type": "integer" },
+        "totalQuestions": { "type": "integer" },
+        "timeTaken": { "type": "integer" },
+        "attemptedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["quizId", "studentId", "score"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "user",
+      "description": "Application users and roles"
+    },
+    "quizzes/{quizId}": {
+      "schema": "quiz",
+      "description": "Quizzes created by teachers"
+    },
+    "quizzes/{quizId}/questions/{questionId}": {
+      "schema": "question",
+      "description": "Questions within a quiz"
+    },
+    "results/{resultId}": {
+      "schema": "result",
+      "description": "Quiz attempt records"
+    }
+  }
+}

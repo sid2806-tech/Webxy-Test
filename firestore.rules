@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // User Profiles
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow create, update: if isOwner(userId) && 
+        incoming().role in ['teacher', 'student'] &&
+        incoming().email == request.auth.token.email;
+    }
+
+    // Quizzes
+    match /quizzes/{quizId} {
+      allow list: if isSignedIn();
+      allow get: if isSignedIn();
+      allow create: if isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher');
+      allow update, delete: if isSignedIn() && existing().teacherId == request.auth.uid;
+
+      // Questions subcollection
+      match /questions/{questionId} {
+        allow list, get: if isSignedIn();
+        allow create, update, delete: if isSignedIn() && get(/databases/$(database)/documents/quizzes/$(quizId)).data.teacherId == request.auth.uid;
+      }
+    }
+
+    // Results
+    match /results/{resultId} {
+      allow create: if isSignedIn() && 
+        incoming().studentId == request.auth.uid &&
+        incoming().score is number &&
+        incoming().score >= 0;
+      
+      allow get: if isSignedIn() && (
+        resource.data.studentId == request.auth.uid || 
+        resource.data.teacherId == request.auth.uid ||
+        get(/databases/$(database)/documents/quizzes/$(resource.data.quizId)).data.teacherId == request.auth.uid
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.studentId == request.auth.uid ||
+        resource.data.teacherId == request.auth.uid
+      );
+    }
+  }
+}
