@@ -61,9 +61,21 @@ export default function AdminQuizView() {
   }, [quizId, profile]);
 
   const handleShare = () => {
-    const studentLink = `${window.location.origin}/student-dashboard`; // Or a direct link if we had one
-    navigator.clipboard.writeText(studentLink);
-    toast.success("Student entry link copied to clipboard!");
+    const studentLink = `${window.location.origin}/student-dashboard`;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(studentLink).then(() => {
+          toast.success("Student link copied!");
+        }).catch(() => {
+          // Fallback to prompt
+          window.prompt("Copy this link for students:", studentLink);
+        });
+      } else {
+        window.prompt("Copy this link for students:", studentLink);
+      }
+    } catch (err) {
+      window.prompt("Copy this link for students:", studentLink);
+    }
   };
 
   const handleExportCSV = () => {
@@ -79,18 +91,21 @@ export default function AdminQuizView() {
       new Date(r.attemptedAt).toLocaleDateString()
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + headers.join(",") + "\n"
-      + rows.map(e => e.join(",")).join("\n");
+    const csvData = [
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
 
-    const encodedUri = encodeURI(csvContent);
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `${quiz?.title || 'quiz'}_results.csv`);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${quiz?.title.replace(/[^a-z0-9]/gi, '_') || 'quiz'}_results.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success("Exporting CSV...");
+    URL.revokeObjectURL(url);
+    toast.success("Export started");
   };
 
   const sortedResults = [...results].sort((a, b) => {

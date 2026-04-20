@@ -214,12 +214,69 @@ export default function StudentDashboard() {
         )}
 
         {activeTab === 'leaderboard' && (
-          <div className="bg-white rounded-[3rem] border border-neutral-100 p-20 flex flex-col items-center justify-center text-center">
-            <div className="p-6 bg-neutral-50 rounded-full mb-6">
-              <Trophy size={48} className="text-amber-400" />
+          <div className="space-y-8">
+            <div className="bg-white rounded-[3rem] border border-neutral-100 p-8 shadow-sm overflow-hidden">
+               <div className="flex items-center gap-4 mb-8 px-4">
+                  <div className="p-3 bg-amber-50 rounded-2xl">
+                    <Trophy className="text-amber-500" size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold">Hall of Fame</h3>
+                    <p className="text-neutral-400 text-sm">Top performers based on overall quiz accuracy.</p>
+                  </div>
+               </div>
+
+               <div className="overflow-x-auto">
+                 <table className="w-full text-left">
+                   <thead>
+                     <tr className="bg-neutral-50/50">
+                        <th className="px-8 py-4 text-xs font-bold uppercase text-neutral-400">Rank</th>
+                        <th className="px-8 py-4 text-xs font-bold uppercase text-neutral-400">Student</th>
+                        <th className="px-8 py-4 text-xs font-bold uppercase text-neutral-400">Avg. Accuracy</th>
+                        <th className="px-8 py-4 text-xs font-bold uppercase text-neutral-400">Quizzes Done</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-neutral-50">
+                     {/* We only have local results here, but we can simulate a global check or just show top peers */}
+                     {/* For a real app, this would query a global 'leaderboard' collection */}
+                     {(() => {
+                        const students = Array.from(new Set(results.map(r => r.studentId))).map(sid => {
+                          const sRes = results.filter(r => r.studentId === sid);
+                          const avg = sRes.reduce((acc, r) => acc + (r.score/r.totalQuestions), 0) / sRes.length;
+                          return { name: sRes[0].studentName, avg, count: sRes.length };
+                        }).sort((a, b) => b.avg - a.avg);
+
+                        if (students.length === 0) {
+                          return <tr><td colSpan={4} className="px-8 py-20 text-center text-neutral-400 font-medium">Be the first to feature on the leaderboard! Take a quiz.</td></tr>
+                        }
+
+                        return students.map((s, idx) => (
+                           <tr key={idx} className={`hover:bg-neutral-50/50 transition-all ${idx === 0 ? 'bg-amber-50/30' : ''}`}>
+                              <td className="px-8 py-4">
+                                {idx < 3 ? (
+                                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold ${idx === 0 ? 'bg-amber-400 text-white' : idx === 1 ? 'bg-neutral-300 text-white' : 'bg-orange-300 text-white'}`}>
+                                    {idx + 1}
+                                  </div>
+                                ) : (
+                                  <span className="text-sm font-bold text-neutral-400 ml-2">{idx + 1}</span>
+                                )}
+                              </td>
+                              <td className="px-8 py-4">
+                                 <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center font-bold text-[10px]">{s.name[0]}</div>
+                                    <span className="font-bold text-sm">{s.name}</span>
+                                    {idx === 0 && <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">EXPERT</span>}
+                                 </div>
+                              </td>
+                              <td className="px-8 py-4 font-bold text-sm text-black">{Math.round(s.avg * 100)}%</td>
+                              <td className="px-8 py-4 text-sm text-neutral-500">{s.count} quizzes</td>
+                           </tr>
+                        ));
+                     })()}
+                   </tbody>
+                 </table>
+               </div>
             </div>
-            <h2 className="text-2xl font-bold mb-2">Global Leaderboard</h2>
-            <p className="text-neutral-400 max-w-md">Coming soon: Compete with students worldwide and see where you stand in individual topics and overall rankings.</p>
           </div>
         )}
       </main>

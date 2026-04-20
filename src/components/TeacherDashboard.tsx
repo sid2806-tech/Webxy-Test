@@ -313,22 +313,95 @@ export default function TeacherDashboard() {
         )}
 
         {activeTab === 'students' && (
-          <div className="bg-white rounded-[3rem] border border-neutral-100 p-20 flex flex-col items-center justify-center text-center">
-            <div className="p-6 bg-neutral-50 rounded-full mb-6">
-              <Users size={48} className="text-neutral-300" />
+          <div className="space-y-8">
+            <div className="bg-white rounded-[3rem] border border-neutral-100 p-8 shadow-sm overflow-hidden">
+               <h3 className="text-xl font-bold mb-6 px-4">Student Roster</h3>
+               <div className="overflow-x-auto">
+                 <table className="w-full text-left">
+                   <thead>
+                     <tr className="bg-neutral-50/50">
+                        <th className="px-8 py-4 text-xs font-bold uppercase text-neutral-400">Student Name</th>
+                        <th className="px-8 py-4 text-xs font-bold uppercase text-neutral-400">Quizzes Taken</th>
+                        <th className="px-8 py-4 text-xs font-bold uppercase text-neutral-400">Avg. Accuracy</th>
+                        <th className="px-8 py-4 text-xs font-bold uppercase text-neutral-400">Overall Rank</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-neutral-50">
+                     {allResults.length === 0 ? (
+                       <tr><td colSpan={4} className="px-8 py-20 text-center text-neutral-400">No student data available yet.</td></tr>
+                     ) : (
+                       Array.from(new Set(allResults.map(r => r.studentId))).map(sid => {
+                         const sResults = allResults.filter(r => r.studentId === sid);
+                         const avg = Math.round(sResults.reduce((acc, r) => acc + (r.score/r.totalQuestions), 0) / sResults.length * 100);
+                         return (
+                           <tr key={sid} className="hover:bg-neutral-50/50 transition-all">
+                              <td className="px-8 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center font-bold text-[10px]">{sResults[0].studentName[0]}</div>
+                                  <span className="font-bold text-sm">{sResults[0].studentName}</span>
+                                </div>
+                              </td>
+                              <td className="px-8 py-4 text-sm">{sResults.length}</td>
+                              <td className="px-8 py-4">
+                                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${avg >= 80 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                    {avg}%
+                                 </span>
+                              </td>
+                              <td className="px-8 py-4 text-sm font-medium text-neutral-400">Tier {avg >= 90 ? 'A' : avg >= 70 ? 'B' : 'C'}</td>
+                           </tr>
+                         );
+                       })
+                     )}
+                   </tbody>
+                 </table>
+               </div>
             </div>
-            <h2 className="text-2xl font-bold mb-2">Student Directory</h2>
-            <p className="text-neutral-400 max-w-md">The student management list is being prepared. Soon you'll be able to see individual student performances across all categories.</p>
           </div>
         )}
 
         {activeTab === 'analytics' && (
-          <div className="bg-white rounded-[3rem] border border-neutral-100 p-20 flex flex-col items-center justify-center text-center">
-            <div className="p-6 bg-neutral-50 rounded-full mb-6">
-              <BarChart3 size={48} className="text-neutral-300" />
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard 
+                icon={<Trophy className="text-amber-500" />} 
+                label="Overall Class Accuracy" 
+                value={`${allResults.length > 0 ? Math.round(allResults.reduce((acc, r) => acc + (r.score/r.totalQuestions), 0) / allResults.length * 100) : 0}%`} 
+              />
+              <StatCard 
+                icon={<Clock className="text-emerald-500" />} 
+                label="Avg. Completion Time" 
+                value={`${allResults.length > 0 ? Math.round(allResults.reduce((acc, r) => acc + r.timeTaken, 0) / allResults.length / 60) : 0}m`} 
+              />
+              <StatCard 
+                icon={<Users className="text-blue-500" />} 
+                label="Participating Students" 
+                value={new Set(allResults.map(r => r.studentId)).size} 
+              />
+              <StatCard 
+                icon={<BarChart3 className="text-purple-500" />} 
+                label="Engagement Rate" 
+                value={`${quizzes.length > 0 ? Math.round((allResults.length / (quizzes.length * Math.max(1, new Set(allResults.map(r => r.studentId)).size))) * 100) : 0}%`} 
+              />
             </div>
-            <h2 className="text-2xl font-bold mb-2">Advanced Analytics</h2>
-            <p className="text-neutral-400 max-w-md">We're building deep-dive reports to help you identify learning gaps and track class progress over time.</p>
+
+            <div className="bg-white p-10 rounded-[3rem] border border-neutral-100 shadow-sm">
+                <h3 className="text-xl font-bold mb-8">Overall Performance Trend</h3>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={quizzes.map(q => {
+                      const qRes = allResults.filter(r => r.quizId === q.id);
+                      const avg = qRes.length > 0 ? Math.round(qRes.reduce((acc, r) => acc + (r.score/r.totalQuestions), 0) / qRes.length * 100) : 0;
+                      return { name: q.title.slice(0, 10) + '...', accuracy: avg };
+                    })}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#999' }} />
+                      <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#999' }} />
+                      <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                      <Bar dataKey="accuracy" fill="#000" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+            </div>
           </div>
         )}
       </main>
